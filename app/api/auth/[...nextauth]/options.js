@@ -4,30 +4,38 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { AuthClient } from "../../../lib/enums";
 
 export const options = {
+  secret: process.env.NEXT_AUTH_SECRET,
+  pages: {
+    signIn: "/auth/login",
+    error: "/login",
+    signOut: "auth/logout",
+  },
+  session: {
+    strategy: "jwt",
+  },
   providers: [
     CredentialsProvider({
-      id: "credentials",
-      name: "credentials",
+      id: AuthClient.CREDENTIALS,
+      name: AuthClient.CREDENTIALS,
       secret: process.env.NEXT_AUTH_SECRET,
       debug: process.env.NODE_ENV === "development",
-      session: {
-        strategy: "jwt",
-      },
-      pages: {
-        signIn: "/auth/login",
-        error: "/login",
-        signOut: "auth/logout",
-      },
+
       async authorize(credentials) {
         const { email, password } = credentials;
         if (!email || !password) {
           throw new Error("Email and password are required!");
         }
         try {
-          const res = await login({
-            email,
-            password,
-            authClient: AuthClient.CREDENTIALS,
+          const res = await fetch(`${process.env.API_URL}/auth/login`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email,
+              password,
+              authClient: AuthClient.CREDENTIALS,
+            }),
           });
           const user = await res.json();
 
@@ -42,8 +50,8 @@ export const options = {
       },
     }),
     GitHubProvider({
-      id: "github",
-      name: "github",
+      id: AuthClient.GITHUB,
+      name: AuthClient.GITHUB,
       async profile(profile) {
         // call the login api here -> if user exists, return user, else create user and return user
         try {
@@ -96,8 +104,8 @@ export const options = {
       clientSecret: process.env.GITHUB_SECRET,
     }),
     GoogleProvider({
-      id: "google",
-      name: "google",
+      id: AuthClient.GOOGLE,
+      name: AuthClient.GOOGLE,
       async profile(profile) {
         try {
           const res = await fetch(`${process.env.API_URL}/auth/login`, {
@@ -134,9 +142,7 @@ export const options = {
               lastName: profile.family_name,
             }),
           });
-
           const user = await res.json();
-
           if (res.ok && user) {
             return {
               ...user,
@@ -152,14 +158,6 @@ export const options = {
     }),
   ],
   callbacks: {
-    // async signIn(user, account, profile) {
-    //   console.log("SignIn: ", user, account, profile);
-    //   return true;
-    // },
-    // async redirect(url, baseUrl) {
-    //   console.log("Redirect: ", url, baseUrl);
-    //   return baseUrl;
-    // },
     async session(session, user) {
       return session;
     },

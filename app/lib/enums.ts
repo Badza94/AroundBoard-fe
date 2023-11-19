@@ -1,5 +1,5 @@
 export enum AuthClient {
-  CREDENTIALS = "credentials",
+  CREDENTIALS = "CREDENTIALS",
   GOOGLE = "GOOGLE",
   GITHUB = "GITHUB",
 }

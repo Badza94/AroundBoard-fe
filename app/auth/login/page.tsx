@@ -7,7 +7,6 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from "@/components/ui/card";
 
 import { signIn } from "next-auth/react";
@@ -25,8 +24,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
-import { Label } from "@/components/ui/label";
 import { Icons } from "@/components/icons";
+import { AuthClient } from "@/app/lib/enums";
 
 type Inputs = {
   email: string;
@@ -38,7 +37,7 @@ export default function Login(): JSX.Element {
   const router = useRouter();
 
   const onSubmit = async (data: Inputs) => {
-    await signIn("credentials", {
+    await signIn(AuthClient.CREDENTIALS, {
       email: data.email,
       password: data.password,
       redirect: false,
@@ -58,7 +57,27 @@ export default function Login(): JSX.Element {
   };
 
   const providerLogin = async (provider: string) => {
-    await signIn(provider, { callbackUrl: "http://localhost:3000/" });
+    try {
+      const result = await signIn(provider, {
+        redirect: false,
+        callbackUrl: "/auth/login",
+      });
+
+      console.log("result: ", result);
+
+      if (!result) {
+        toast.error("Something went wrong");
+      } else if (result.error) {
+        toast.error(result.error);
+      } else {
+        // Successful authentication
+        router.push("/");
+      }
+    } catch (error) {
+      // Handle errors locally without triggering the redirect
+      console.error("Authentication error:", error);
+      toast.error("Something went wrong");
+    }
   };
 
   const formSchema = z.object({
@@ -88,11 +107,17 @@ export default function Login(): JSX.Element {
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid grid-cols-2 gap-6">
-          <Button onClick={() => providerLogin("github")} variant="outline">
+          <Button
+            onClick={() => providerLogin(AuthClient.GITHUB)}
+            variant="outline"
+          >
             <Icons.gitHub className="w-4 h-4 mr-2" />
             Github
           </Button>
-          <Button onClick={() => providerLogin("google")} variant="outline">
+          <Button
+            onClick={() => providerLogin(AuthClient.GOOGLE)}
+            variant="outline"
+          >
             <Icons.google className="w-4 h-4 mr-2" />
             Google
           </Button>
